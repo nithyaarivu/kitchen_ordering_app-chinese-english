@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitchen Menu - Order Ingredients</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f5f5f5;
+            padding-bottom: 80px;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .search-bar button {
+            padding: 12px 20px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .categories {
+            display: flex;
+            overflow-x: auto;
+            padding: 15px;
+            gap: 10px;
+            background: white;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .category-btn {
+            padding: 10px 20px;
+            background: #ecf0f1;
+            border: none;
+            border-radius: 20px;
+            white-space: nowrap;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .category-btn.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .items-container {
+            padding: 15px;
+        }
+
+        .item-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .item-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .item-price {
+            font-size: 20px;
+            font-weight: bold;
+            color: #27ae60;
+        }
+
+        .item-category {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #e8f5e9;
+            color: #27ae60;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .qty-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #3498db;
+            background: white;
+            color: #3498db;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .qty-input {
+            width: 60px;
+            text-align: center;
+            padding: 10px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .add-btn {
+            padding: 12px 24px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .add-btn:active {
+            background: #229954;
+        }
+
+        .cart-float {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: #e74c3c;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        .cart-icon {
+            font-size: 24px;
+            color: white;
+        }
+
+        .cart-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #f39c12;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #7f8c8d;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🍽️ Kitchen Ordering</h1>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search ingredients..." value="{{ search }}">
+            <button onclick="searchItems()">Search</button>
+        </div>
+    </div>
+
+    <div class="categories">
+        <button class="category-btn {% if current_category == 'all' %}active{% endif %}"
+                onclick="filterCategory('all')">All</button>
+        {% for cat in categories %}
+        <button class="category-btn {% if current_category == cat %}active{% endif %}"
+                onclick="filterCategory('{{ cat }}')">{{ cat }}</button>
+        {% endfor %}
+    </div>
+
+    <div class="items-container" id="itemsContainer">
+        {% if items %}
+            {% for item in items %}
+            <div class="item-card">
+                <div class="item-header">
+                    <div>
+                        <div class="item-name">{{ item.name }}</div>
+                        <span class="item-category">{{ item.category }}</span>
+                    </div>
+                    <div class="item-price">{{ "%.2f"|format(item.price) }} AED/{{ item.unit }}</div>
+                </div>
+                <div class="item-actions">
+                    <div class="quantity-control">
+                        <button class="qty-btn" onclick="changeQty('{{ item.id }}', -1)">−</button>
+                        <input type="number" id="qty-{{ item.id }}" class="qty-input"
+                               value="{{ item.min_order_qty }}" min="0" step="0.5">
+                        <button class="qty-btn" onclick="changeQty('{{ item.id }}', 1)">+</button>
+                    </div>
+                    <button class="add-btn" onclick="addToCart({{ item.id }}, '{{ item.name }}', {{ item.price }}, '{{ item.unit }}')">
+                        Add
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>No items found</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="cart-float" onclick="goToCart()">
+        <span class="cart-icon">🛒</span>
+        <span class="cart-badge" id="cartBadge">0</span>
+    </div>
+
+    <script>
+        // Cart management
+        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        updateCartBadge();
+
+        function updateCartBadge() {
+            document.getElementById('cartBadge').textContent = cart.length;
+        }
+
+        function changeQty(itemId, delta) {
+            const input = document.getElementById('qty-' + itemId);
+            let value = parseFloat(input.value) || 0;
+            value = Math.max(0, value + delta);
+            input.value = value;
+        }
+
+        function addToCart(id, name, price, unit) {
+            const qtyInput = document.getElementById('qty-' + id);
+            const quantity = parseFloat(qtyInput.value);
+
+            if (quantity <= 0) {
+                alert('Please enter a valid quantity');
+                return;
+            }
+
+            // Check if item already in cart
+            const existingIndex = cart.findIndex(item => item.id === id);
+
+            if (existingIndex >= 0) {
+                cart[existingIndex].quantity += quantity;
+            } else {
+                cart.push({
+                    id: id,
+                    name: name,
+                    price: price,
+                    unit: unit,
+                    quantity: quantity
+                });
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartBadge();
+
+            // Show feedback
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '✓ Added';
+            btn.style.background = '#27ae60';
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '';
+            }, 1000);
+        }
+
+        function goToCart() {
+            window.location.href = '/cart';
+        }
+
+        function searchItems() {
+            const search = document.getElementById('searchInput').value;
+            window.location.href = '/menu?search=' + encodeURIComponent(search);
+        }
+
+        function filterCategory(category) {
+            window.location.href = '/menu?category=' + category;
+        }
+
+        // Allow Enter key for search
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchItems();
+            }
+        });
+    </script>
+</body>
+</html>
